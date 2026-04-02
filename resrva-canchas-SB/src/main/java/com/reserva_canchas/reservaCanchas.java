@@ -1,13 +1,13 @@
-package com.backend.resrva_canchas;
+package com.reserva_canchas;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class ResrvaCanchasApplication {
+public class reservaCanchas {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ResrvaCanchasApplication.class, args);
+		SpringApplication.run(reservaCanchas.class, args);
 	}
 
 }
