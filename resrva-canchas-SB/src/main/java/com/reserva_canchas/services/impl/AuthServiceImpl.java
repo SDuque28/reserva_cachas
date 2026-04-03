@@ -40,9 +40,13 @@ public class AuthServiceImpl implements IAuthService {
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username already taken: " + request.getUsername());
         }
+        if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already taken: " + request.getEmail());
+        }
 
         Usuario usuario = new Usuario();
         usuario.setUsername(request.getUsername());
+        usuario.setEmail(request.getEmail());
         usuario.setPassword(passwordEncoder.encode(request.getPassword()));
         usuario.setActivo(true);
         usuarioRepository.save(usuario);
@@ -56,7 +60,7 @@ public class AuthServiceImpl implements IAuthService {
         });
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(usuario.getUsername());
-        return buildResponse(userDetails);
+        return buildResponse(userDetails, usuario.getEmail());
     }
 
     @Override
@@ -64,11 +68,13 @@ public class AuthServiceImpl implements IAuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
+        Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + request.getUsername()));
         UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
-        return buildResponse(userDetails);
+        return buildResponse(userDetails, usuario.getEmail());
     }
 
-    private AuthResponse buildResponse(UserDetails userDetails) {
+    private AuthResponse buildResponse(UserDetails userDetails, String email) {
         String token = jwtUtil.generateToken(userDetails);
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
@@ -76,6 +82,7 @@ public class AuthServiceImpl implements IAuthService {
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setUsername(userDetails.getUsername());
+        response.setEmail(email);
         response.setRoles(roles);
         return response;
     }

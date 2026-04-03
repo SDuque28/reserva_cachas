@@ -36,7 +36,7 @@ public class SecurityConfig {
                         // Public — registration and login
                         .requestMatchers("/auth/**").permitAll()
                         // Endpoints without @PreAuthorize are publicly accessible
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) ->

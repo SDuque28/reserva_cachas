@@ -24,6 +24,9 @@ public class Usuario {
     @Column(nullable = false, length = 255)
     private String password;
 
+    @Column(nullable = false, unique = true, length = 100)
+    private String email;
+
     @Column(columnDefinition = "BOOLEAN DEFAULT TRUE")
     private Boolean activo;
 
