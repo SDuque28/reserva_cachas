@@ -109,9 +109,6 @@ CREATE TABLE reserva (
 
     CONSTRAINT fk_reserva_horario FOREIGN KEY (horario_id) REFERENCES horario(id)
         ON DELETE CASCADE ON UPDATE CASCADE,
-
-    -- evita doble reserva del mismo horario en la misma fecha
-    UNIQUE (cancha_id, horario_id, fecha)
 );
 
 -- ─────────────────────────────────────────
