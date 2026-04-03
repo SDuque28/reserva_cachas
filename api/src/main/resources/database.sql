@@ -108,7 +108,7 @@ CREATE TABLE reserva (
         ON DELETE CASCADE ON UPDATE CASCADE,
 
     CONSTRAINT fk_reserva_horario FOREIGN KEY (horario_id) REFERENCES horario(id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
+        ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- ─────────────────────────────────────────
