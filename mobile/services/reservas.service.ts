@@ -8,7 +8,7 @@ interface CrearReservaPayload {
 }
 
 export async function getReservas(): Promise<Reserva[]> {
-  const { data } = await apiClient.get<Reserva[]>('/reservas');
+  const { data } = await apiClient.get<Reserva[]>('/reservas/mis-reservas');
   return data;
 }
 
