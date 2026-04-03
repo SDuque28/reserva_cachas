@@ -1,0 +1,80 @@
+@startuml Diagrama.pu
+!theme plain
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+entity "usuario" as usuario {
+  +id : BIGINT (PK)
+  username : VARCHAR
+  email : VARCHAR
+  password : VARCHAR
+  activo : BOOLEAN
+  created_at : TIMESTAMP
+}
+
+entity "rol" as rol {
+  +id : BIGINT (PK)
+  nombre : VARCHAR
+}
+
+entity "usuario_rol" as usuario_rol {
+  +usuario_id : BIGINT (PK, FK)
+  +rol_id : BIGINT (PK, FK)
+}
+
+entity "sede" as sede {
+  +id : BIGINT (PK)
+  nombre : VARCHAR
+  direccion : VARCHAR
+}
+
+entity "tipo_cancha" as tipo_cancha {
+  +id : BIGINT (PK)
+  nombre : VARCHAR
+}
+
+entity "cancha" as cancha {
+  +id : BIGINT (PK)
+  nombre : VARCHAR
+  descripcion : TEXT
+  capacidad : INT
+  imagen_url : VARCHAR
+  sede_id : BIGINT (FK)
+  tipo_cancha_id : BIGINT (FK)
+}
+
+entity "horario" as horario {
+  +id : BIGINT (PK)
+  cancha_id : BIGINT (FK)
+  dia_semana : ENUM
+  hora_inicio : TIME
+  hora_fin : TIME
+}
+
+entity "reserva" as reserva {
+  +id : BIGINT (PK)
+  usuario_id : BIGINT (FK)
+  cancha_id : BIGINT (FK)
+  horario_id : BIGINT (FK)
+  fecha : DATE
+  estado : ENUM
+  created_at : TIMESTAMP
+}
+
+' =========================
+' RELACIONES
+' =========================
+
+usuario ||--o{ usuario_rol
+rol ||--o{ usuario_rol
+
+sede ||--o{ cancha
+tipo_cancha ||--o{ cancha
+
+cancha ||--o{ horario
+
+usuario ||--o{ reserva
+cancha ||--o{ reserva
+horario ||--o{ reserva
+
+@enduml
