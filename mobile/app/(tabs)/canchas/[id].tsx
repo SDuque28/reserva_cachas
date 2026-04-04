@@ -13,7 +13,6 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getHorariosDisponibles } from '@/services/canchas.service';
 import { crearReserva } from '@/services/reservas.service';
 import { Cancha, Horario } from '@/services/types';
@@ -45,9 +44,6 @@ export default function DetalleCanchaScreen() {
   const [loadingHorarios, setLoadingHorarios] = useState(false);
   const [errorHorarios, setErrorHorarios] = useState<string | null>(null);
 
-  const [nota, setNota] = useState('');
-  const [guardandoNota, setGuardandoNota] = useState(false);
-
   const [horarioSeleccionado, setHorarioSeleccionado] = useState<Horario | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [reservando, setReservando] = useState(false);
@@ -61,57 +57,20 @@ export default function DetalleCanchaScreen() {
     navigation.setOptions({ title: cancha.nombre });
   }, [cancha, navigation]);
 
-  useEffect(() => {
-    async function cargarNota() {
-      try {
-        const stored = await AsyncStorage.getItem(`nota_cancha_${canchaId}`);
-        if (stored !== null) setNota(stored);
-      } catch {
-        // Ignoramos error de lectura de nota local.
-      }
-    }
-
-    cargarNota();
-  }, [canchaId]);
-
-  const guardarNota = useCallback(
-    async (texto: string) => {
-      setGuardandoNota(true);
-      try {
-        await AsyncStorage.setItem(`nota_cancha_${canchaId}`, texto);
-      } catch {
-        // Ignoramos error de escritura de nota local.
-      } finally {
-        setGuardandoNota(false);
-      }
-    },
-    [canchaId]
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      guardarNota(nota);
-    }, 600);
-
-    return () => clearTimeout(timer);
-  }, [nota, guardarNota]);
-
   const cargarHorarios = useCallback(async () => {
-    if (!fecha) return;
-
     setLoadingHorarios(true);
     setErrorHorarios(null);
     setHorarios([]);
 
     try {
-      const data = await getHorariosDisponibles(canchaId, fecha);
+      const data = await getHorariosDisponibles(canchaId);
       setHorarios(data);
     } catch {
       setErrorHorarios('No se pudieron cargar los horarios disponibles.');
     } finally {
       setLoadingHorarios(false);
     }
-  }, [canchaId, fecha]);
+  }, [canchaId]);
 
   useEffect(() => {
     cargarHorarios();
@@ -135,7 +94,7 @@ export default function DetalleCanchaScreen() {
       );
       cargarHorarios();
     } catch (e: any) {
-      const msg = e?.response?.data?.message || 'No se pudo crear la reserva. Intenta de nuevo.';
+      const msg = e?.response?.data?.message || 'Ese horario ya esta reservado o no se pudo crear la reserva.';
       Alert.alert('Error al reservar', msg);
     } finally {
       setReservando(false);
@@ -168,7 +127,7 @@ export default function DetalleCanchaScreen() {
         <View style={styles.content}>
           <Text style={styles.nombre}>{cancha.nombre}</Text>
           <Text style={styles.meta}>
-            {sedeNombre} · {tipoNombre}
+            {sedeNombre} - {tipoNombre}
           </Text>
           <Text style={styles.descripcion}>{cancha.descripcion}</Text>
 
@@ -176,14 +135,10 @@ export default function DetalleCanchaScreen() {
             <Text style={styles.capacidad}>Capacidad: {cancha.capacidad} personas</Text>
           ) : null}
 
-          {cancha.sede?.direccion ? (
-            <Text style={styles.direccion}>{cancha.sede.direccion}</Text>
-          ) : null}
-
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Disponibilidad</Text>
+            <Text style={styles.sectionTitle}>Horarios disponibles</Text>
 
-            <Text style={styles.fieldLabel}>Fecha</Text>
+            <Text style={styles.fieldLabel}>Fecha de reserva</Text>
             <TextInput
               style={styles.dateInput}
               value={fecha}
@@ -195,7 +150,7 @@ export default function DetalleCanchaScreen() {
             />
 
             <TouchableOpacity style={styles.buscarButton} onPress={cargarHorarios}>
-              <Text style={styles.buscarButtonText}>Buscar horarios</Text>
+              <Text style={styles.buscarButtonText}>Actualizar horarios</Text>
             </TouchableOpacity>
 
             {loadingHorarios ? (
@@ -203,7 +158,7 @@ export default function DetalleCanchaScreen() {
             ) : errorHorarios ? (
               <Text style={styles.errorText}>{errorHorarios}</Text>
             ) : horarios.length === 0 ? (
-              <Text style={styles.emptyText}>No hay horarios disponibles para esta fecha.</Text>
+              <Text style={styles.emptyText}>No hay horarios disponibles para esta cancha.</Text>
             ) : (
               <View style={styles.horariosGrid}>
                 {horarios.map((horario) => (
@@ -214,30 +169,13 @@ export default function DetalleCanchaScreen() {
                     activeOpacity={0.7}
                   >
                     <Text style={styles.horarioText}>
-                      {horario.horaInicio} - {horario.horaFin}
+                      {horario.horaInicio.slice(0, 5)} - {horario.horaFin.slice(0, 5)}
                     </Text>
                     <Text style={styles.horarioDia}>{horario.diaSemana}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
             )}
-          </View>
-
-          <View style={styles.section}>
-            <View style={styles.notaHeader}>
-              <Text style={styles.sectionTitle}>Mi nota personal</Text>
-              {guardandoNota ? <Text style={styles.guardandoText}>Guardando...</Text> : null}
-            </View>
-
-            <TextInput
-              style={styles.notaInput}
-              value={nota}
-              onChangeText={setNota}
-              multiline
-              placeholder="Escribe recordatorios o comentarios sobre esta cancha..."
-              placeholderTextColor="#9ca3af"
-              textAlignVertical="top"
-            />
           </View>
         </View>
       </ScrollView>
@@ -256,7 +194,9 @@ export default function DetalleCanchaScreen() {
               <Text style={styles.modalBody}>
                 <Text style={styles.modalBold}>{cancha.nombre}</Text>
                 {'\n'}Fecha: {fecha}
-                {'\n'}Horario: {horarioSeleccionado.horaInicio} - {horarioSeleccionado.horaFin}
+                {'\n'}Horario: {horarioSeleccionado.horaInicio.slice(0, 5)} -{' '}
+                {horarioSeleccionado.horaFin.slice(0, 5)}
+                {'\n'}Dia: {horarioSeleccionado.diaSemana}
                 {'\n'}Sede: {sedeNombre}
               </Text>
             ) : null}
@@ -340,11 +280,6 @@ const styles = StyleSheet.create({
   capacidad: {
     fontSize: 13,
     color: '#374151',
-    marginBottom: 2,
-  },
-  direccion: {
-    fontSize: 13,
-    color: '#9ca3af',
     marginBottom: 20,
   },
   section: {
@@ -408,27 +343,6 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
     marginTop: 2,
     textTransform: 'capitalize',
-  },
-  notaHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  guardandoText: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  notaInput: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 14,
-    color: '#111827',
-    minHeight: 100,
-    lineHeight: 20,
   },
   errorText: {
     color: '#ef4444',

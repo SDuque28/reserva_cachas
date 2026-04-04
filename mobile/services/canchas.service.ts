@@ -69,9 +69,9 @@ export async function getCanchaById(id: number): Promise<Cancha> {
   return normalizeCancha(data);
 }
 
-export async function getHorariosDisponibles(canchaId: number, fecha: string): Promise<Horario[]> {
-  const { data } = await apiClient.get<Horario[]>(`/canchas/${canchaId}/disponibilidad`, {
-    params: { fecha },
+export async function getHorariosDisponibles(canchaId: number): Promise<Horario[]> {
+  const { data } = await apiClient.get<Horario[]>('/horarios', {
+    params: { canchaId },
   });
   return data;
 }
