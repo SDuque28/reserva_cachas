@@ -10,5 +10,7 @@ public interface ICanchaService {
 
     List<CanchaResponse> findByFilters(Long sedeId, Long tipoId, LocalDate fecha);
 
+    CanchaResponse findById(Long id);
+
     List<HorarioResponse> findDisponibilidad(Long canchaId, LocalDate fecha);
 }

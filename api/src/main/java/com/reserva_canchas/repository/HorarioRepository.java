@@ -31,4 +31,12 @@ public interface HorarioRepository extends JpaRepository<Horario, Long> {
             @Param("fecha") LocalDate fecha,
             @Param("diaSemana") DiaSemana diaSemana
     );
+
+    @Query("""
+            SELECT h
+            FROM Horario h
+            WHERE (:canchaId IS NULL OR h.cancha.id = :canchaId)
+            ORDER BY h.id
+            """)
+    List<Horario> findByCanchaId(@Param("canchaId") Long canchaId);
 }

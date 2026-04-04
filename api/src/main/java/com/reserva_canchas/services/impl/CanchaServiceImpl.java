@@ -34,6 +34,15 @@ public class CanchaServiceImpl implements ICanchaService {
 
     @Override
     @Transactional(readOnly = true)
+    public CanchaResponse findById(Long id) {
+        Cancha cancha = canchaRepository.findByIdWithSedeAndTipoCancha(id)
+                .orElseThrow(() -> new NoSuchElementException("Cancha not found: " + id));
+
+        return toResponse(cancha);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<HorarioResponse> findDisponibilidad(Long canchaId, LocalDate fecha) {
         if (!canchaRepository.existsById(canchaId)) {
             throw new NoSuchElementException("Cancha not found: " + canchaId);
@@ -51,6 +60,9 @@ public class CanchaServiceImpl implements ICanchaService {
         CanchaResponse response = new CanchaResponse();
         response.setId(cancha.getId());
         response.setNombre(cancha.getNombre());
+        response.setDescripcion(cancha.getDescripcion());
+        response.setCapacidad(cancha.getCapacidad());
+        response.setImagenUrl(cancha.getImagenUrl());
         response.setSedeId(cancha.getSede().getId());
         response.setSedeNombre(cancha.getSede().getNombre());
         response.setTipoId(cancha.getTipoCancha().getId());
@@ -61,8 +73,10 @@ public class CanchaServiceImpl implements ICanchaService {
     private HorarioResponse toResponse(Horario horario) {
         HorarioResponse response = new HorarioResponse();
         response.setId(horario.getId());
+        response.setDiaSemana(horario.getDiaSemana());
         response.setHoraInicio(horario.getHoraInicio());
         response.setHoraFin(horario.getHoraFin());
+        response.setCanchaId(horario.getCancha().getId());
         return response;
     }
 }

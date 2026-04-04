@@ -9,6 +9,9 @@ public class CanchaResponse {
 
     private Long id;
     private String nombre;
+    private String descripcion;
+    private Integer capacidad;
+    private String imagenUrl;
     private Long sedeId;
     private String sedeNombre;
     private Long tipoId;

@@ -31,6 +31,11 @@ public class CanchaController {
         return ResponseEntity.ok(canchaService.findByFilters(sedeId, tipoId, fecha));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CanchaResponse> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(canchaService.findById(id));
+    }
+
     @GetMapping("/{id}/disponibilidad")
     public ResponseEntity<List<HorarioResponse>> findDisponibilidad(
             @PathVariable Long id,

@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface CanchaRepository extends JpaRepository<Cancha, Long> {
 
@@ -42,4 +43,13 @@ public interface CanchaRepository extends JpaRepository<Cancha, Long> {
             @Param("fecha") LocalDate fecha,
             @Param("diaSemana") DiaSemana diaSemana
     );
+
+    @Query("""
+            SELECT c
+            FROM Cancha c
+            JOIN FETCH c.sede
+            JOIN FETCH c.tipoCancha
+            WHERE c.id = :id
+            """)
+    Optional<Cancha> findByIdWithSedeAndTipoCancha(@Param("id") Long id);
 }
