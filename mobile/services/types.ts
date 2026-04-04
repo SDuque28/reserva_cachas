@@ -1,8 +1,10 @@
 export interface Usuario {
-  id: number;
-  nombre: string;
+  id?: number;
+  username: string;
+  nombre?: string;
   email: string;
   token: string;
+  roles?: string[];
 }
 
 export interface Sede {

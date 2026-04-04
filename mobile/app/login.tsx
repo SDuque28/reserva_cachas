@@ -16,12 +16,12 @@ import { login } from '@/services/auth.service';
 import { useAuth } from '@/hooks/useAuth';
 
 interface FormErrors {
-  email?: string;
+  username?: string;
   password?: string;
 }
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -30,15 +30,11 @@ export default function LoginScreen() {
 
   function validate(): boolean {
     const newErrors: FormErrors = {};
-    if (!email.trim()) {
-      newErrors.email = 'El correo es requerido';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      newErrors.email = 'Formato de correo no válido';
+    if (!username.trim()) {
+      newErrors.username = 'El usuario es requerido';
     }
     if (!password) {
-      newErrors.password = 'La contraseña es requerida';
-    } else if (password.length < 6) {
-      newErrors.password = 'Mínimo 6 caracteres';
+      newErrors.password = 'La contrasena es requerida';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -48,13 +44,27 @@ export default function LoginScreen() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const { token, usuario } = await login({ email: email.trim(), password });
+      console.log('[LOGIN SUBMIT]', { username: username.trim() });
+      const { token, usuario } = await login({ username: username.trim(), password });
+      console.log('[LOGIN SUCCESS]', {
+        username: usuario.username,
+        email: usuario.email,
+        roles: usuario.roles,
+        hasToken: Boolean(token),
+      });
       await signIn(token, usuario);
       router.replace('/(tabs)/canchas');
     } catch (e: any) {
+      console.error('[LOGIN ERROR]', {
+        message: e?.message,
+        status: e?.response?.status,
+        responseData: e?.response?.data,
+      });
       const msg =
-        e?.response?.data?.message || 'Correo o contraseña incorrectos. Intenta de nuevo.';
-      Alert.alert('Error al iniciar sesión', msg);
+        e?.response?.data?.message ||
+        e?.message ||
+        'Usuario o contrasena incorrectos. Intenta de nuevo.';
+      Alert.alert('Error al iniciar sesion', msg);
     } finally {
       setLoading(false);
     }
@@ -67,37 +77,36 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Reserva Canchas</Text>
-        <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
+        <Text style={styles.subtitle}>Inicia sesion para continuar</Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Correo electrónico</Text>
+          <Text style={styles.label}>Usuario</Text>
           <TextInput
-            style={[styles.input, errors.email ? styles.inputError : null]}
-            value={email}
-            onChangeText={(v) => {
-              setEmail(v);
-              if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
+            style={[styles.input, errors.username ? styles.inputError : null]}
+            value={username}
+            onChangeText={(value) => {
+              setUsername(value);
+              if (errors.username) setErrors((prev) => ({ ...prev, username: undefined }));
             }}
-            keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-            placeholder="correo@ejemplo.com"
+            placeholder="tu_usuario"
             placeholderTextColor="#9ca3af"
           />
-          {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+          {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Contraseña</Text>
+          <Text style={styles.label}>Contrasena</Text>
           <TextInput
             style={[styles.input, errors.password ? styles.inputError : null]}
             value={password}
-            onChangeText={(v) => {
-              setPassword(v);
-              if (errors.password) setErrors((p) => ({ ...p, password: undefined }));
+            onChangeText={(value) => {
+              setPassword(value);
+              if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
             }}
             secureTextEntry
-            placeholder="••••••"
+            placeholder="******"
             placeholderTextColor="#9ca3af"
           />
           {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
@@ -112,13 +121,13 @@ export default function LoginScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Iniciar sesión</Text>
+            <Text style={styles.buttonText}>Iniciar sesion</Text>
           )}
         </TouchableOpacity>
 
         <Link href="/register" asChild>
           <TouchableOpacity style={styles.linkButton} activeOpacity={0.7}>
-            <Text style={styles.linkText}>¿No tienes cuenta? Regístrate</Text>
+            <Text style={styles.linkText}>No tienes cuenta? Registrate</Text>
           </TouchableOpacity>
         </Link>
       </ScrollView>
