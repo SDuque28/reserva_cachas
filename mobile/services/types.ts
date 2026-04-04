@@ -26,6 +26,10 @@ export interface Cancha {
   imagenUrl: string;
   sede: Sede;
   tipo: TipoCancha;
+  sedeId?: number;
+  sedeNombre?: string;
+  tipoId?: number;
+  tipoNombre?: string;
 }
 
 export interface Horario {

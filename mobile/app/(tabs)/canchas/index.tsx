@@ -29,7 +29,6 @@ export default function CanchasScreen() {
   const [loadingFiltros, setLoadingFiltros] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Cargar sedes y tipos al montar
   useEffect(() => {
     async function cargarFiltros() {
       try {
@@ -37,40 +36,38 @@ export default function CanchasScreen() {
         setSedes(sedesData);
         setTipos(tiposData);
       } catch {
-        // Los filtros no son críticos; la lista igual puede cargarse
+        // Los filtros no son criticos; la lista de canchas igual puede mostrarse.
       } finally {
         setLoadingFiltros(false);
       }
     }
+
     cargarFiltros();
   }, []);
 
   const cargarCanchas = useCallback(async () => {
     setLoadingCanchas(true);
     setError(null);
+
     try {
       const filtros: { sedeId?: number; tipoId?: number } = {};
       if (sedeSeleccionada !== null) filtros.sedeId = sedeSeleccionada;
       if (tipoSeleccionado !== null) filtros.tipoId = tipoSeleccionado;
+
       const data = await getCanchas(filtros);
       setCanchas(data);
     } catch {
-      setError('No se pudo cargar la lista de canchas. Verifica tu conexión.');
+      setError('No se pudo cargar la lista de canchas. Verifica tu conexion.');
     } finally {
       setLoadingCanchas(false);
     }
   }, [sedeSeleccionada, tipoSeleccionado]);
 
-  // Recargar canchas cada vez que cambian los filtros
   useEffect(() => {
     cargarCanchas();
   }, [cargarCanchas]);
 
-  function renderFiltroChip(
-    label: string,
-    isActive: boolean,
-    onPress: () => void
-  ) {
+  function renderFiltroChip(label: string, isActive: boolean, onPress: () => void) {
     return (
       <TouchableOpacity
         key={label}
@@ -84,28 +81,50 @@ export default function CanchasScreen() {
   }
 
   function renderCancha({ item }: { item: Cancha }) {
+    const tipoNombre = item.tipoNombre ?? item.tipo?.nombre ?? 'Cancha';
+    const sedeNombre = item.sedeNombre ?? item.sede?.nombre ?? 'Sede sin asignar';
+    const inicial = item.nombre.trim().charAt(0).toUpperCase() || 'C';
+
     return (
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.8}
-        onPress={() => router.push(`/(tabs)/canchas/${item.id}`)}
+        onPress={() =>
+          router.push({
+            pathname: '/(tabs)/canchas/[id]',
+            params: {
+              id: item.id.toString(),
+              canchaData: JSON.stringify(item),
+            },
+          })
+        }
       >
         {item.imagenUrl ? (
           <Image source={{ uri: item.imagenUrl }} style={styles.cardImage} resizeMode="cover" />
         ) : (
           <View style={styles.cardImagePlaceholder}>
-            <Text style={styles.placeholderText}>Sin imagen</Text>
+            <Text style={styles.placeholderInitial}>{inicial}</Text>
+            <Text style={styles.placeholderText}>{tipoNombre}</Text>
           </View>
         )}
+
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>{item.nombre}</Text>
-          <Text style={styles.cardMeta}>
-            {item.sede?.nombre} · {item.tipo?.nombre}
-          </Text>
+          <View style={styles.cardHeaderRow}>
+            <Text style={styles.cardTitle}>{item.nombre}</Text>
+            <View style={styles.typeBadge}>
+              <Text style={styles.typeBadgeText}>{tipoNombre}</Text>
+            </View>
+          </View>
+
+          <Text style={styles.cardMeta}>{sedeNombre}</Text>
+
           <Text style={styles.cardDesc} numberOfLines={2}>
             {item.descripcion}
           </Text>
-          <Text style={styles.cardCapacidad}>Capacidad: {item.capacidad} personas</Text>
+
+          {item.capacidad > 0 ? (
+            <Text style={styles.cardCapacidad}>Capacidad: {item.capacidad} personas</Text>
+          ) : null}
         </View>
       </TouchableOpacity>
     );
@@ -113,36 +132,30 @@ export default function CanchasScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Filtros */}
       {!loadingFiltros && (
         <View style={styles.filtrosContainer}>
           <Text style={styles.filtroLabel}>Sede</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-            {renderFiltroChip('Todas', sedeSeleccionada === null, () =>
-              setSedeSeleccionada(null)
-            )}
-            {sedes.map((s) =>
-              renderFiltroChip(s.nombre, sedeSeleccionada === s.id, () =>
-                setSedeSeleccionada(sedeSeleccionada === s.id ? null : s.id)
+            {renderFiltroChip('Todas', sedeSeleccionada === null, () => setSedeSeleccionada(null))}
+            {sedes.map((sede) =>
+              renderFiltroChip(sede.nombre, sedeSeleccionada === sede.id, () =>
+                setSedeSeleccionada(sedeSeleccionada === sede.id ? null : sede.id)
               )
             )}
           </ScrollView>
 
           <Text style={styles.filtroLabel}>Tipo</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipRow}>
-            {renderFiltroChip('Todos', tipoSeleccionado === null, () =>
-              setTipoSeleccionado(null)
-            )}
-            {tipos.map((t) =>
-              renderFiltroChip(t.nombre, tipoSeleccionado === t.id, () =>
-                setTipoSeleccionado(tipoSeleccionado === t.id ? null : t.id)
+            {renderFiltroChip('Todos', tipoSeleccionado === null, () => setTipoSeleccionado(null))}
+            {tipos.map((tipo) =>
+              renderFiltroChip(tipo.nombre, tipoSeleccionado === tipo.id, () =>
+                setTipoSeleccionado(tipoSeleccionado === tipo.id ? null : tipo.id)
               )
             )}
           </ScrollView>
         </View>
       )}
 
-      {/* Lista */}
       {loadingCanchas ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#2563eb" />
@@ -156,7 +169,9 @@ export default function CanchasScreen() {
         </View>
       ) : canchas.length === 0 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No hay canchas disponibles para los filtros seleccionados.</Text>
+          <Text style={styles.emptyText}>
+            No hay canchas disponibles para los filtros seleccionados.
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -238,23 +253,48 @@ const styles = StyleSheet.create({
   },
   cardImagePlaceholder: {
     width: '100%',
-    height: 100,
-    backgroundColor: '#e5e7eb',
+    height: 120,
+    backgroundColor: '#dbeafe',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  placeholderInitial: {
+    color: '#1d4ed8',
+    fontSize: 34,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#1d4ed8',
     fontSize: 13,
+    fontWeight: '600',
   },
   cardBody: {
     padding: 14,
   },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   cardTitle: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 2,
+  },
+  typeBadge: {
+    backgroundColor: '#eff6ff',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#1d4ed8',
   },
   cardMeta: {
     fontSize: 13,
