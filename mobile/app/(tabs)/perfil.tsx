@@ -40,7 +40,7 @@ export default function PerfilScreen() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container} >
       {/* Avatar inicial */}
       <View style={styles.avatarContainer}>
         <View style={styles.avatar}>
@@ -78,7 +78,7 @@ export default function PerfilScreen() {
           <Text style={styles.signOutText}>Cerrar sesión</Text>
         )}
       </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -86,10 +86,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f9fafb',
-  },
-  content: {
     padding: 24,
     paddingTop: 32,
+    justifyContent: 'center',
   },
   avatarContainer: {
     alignItems: 'center',

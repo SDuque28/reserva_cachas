@@ -111,8 +111,6 @@ export default function DetalleReservaScreen() {
           <Text style={styles.cardTitle}>Cancha</Text>
           <InfoRow label="Nombre" value={canchaNombre} />
           <InfoRow label="Sede" value={sedeNombre} />
-          <InfoRow label="Cancha ID" value={reserva.canchaId} />
-          <InfoRow label="Horario ID" value={reserva.horarioId} />
         </View>
 
         <View style={styles.infoCard}>
