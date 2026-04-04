@@ -12,6 +12,20 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { getReservas } from '@/services/reservas.service';
 import { Reserva } from '@/services/types';
 
+function formatHora(hora?: string) {
+  return hora ? hora.slice(0, 5) : '--:--';
+}
+
+function getEstadoStyle(estado?: string) {
+  const esActiva = estado === 'ACTIVA';
+
+  return {
+    badge: esActiva ? styles.estadoActiva : styles.estadoCancelada,
+    text: esActiva ? styles.estadoActivaText : styles.estadoCanceladaText,
+    label: estado ?? 'SIN ESTADO',
+  };
+}
+
 export default function ReservasScreen() {
   const router = useRouter();
   const [reservas, setReservas] = useState<Reserva[]>([]);
@@ -22,19 +36,19 @@ export default function ReservasScreen() {
   const cargarReservas = useCallback(async (esRefresh = false) => {
     if (esRefresh) setRefreshing(true);
     else setLoading(true);
+
     setError(null);
     try {
       const data = await getReservas();
       setReservas(data);
     } catch {
-      setError('No se pudo cargar el historial de reservas. Verifica tu conexión.');
+      setError('No se pudo cargar el historial de reservas. Verifica tu conexion.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  // Recargar cada vez que el tab recibe el foco
   useFocusEffect(
     useCallback(() => {
       cargarReservas();
@@ -42,28 +56,42 @@ export default function ReservasScreen() {
   );
 
   function renderReserva({ item }: { item: Reserva }) {
+    const estadoStyle = getEstadoStyle(item.estado);
+
     return (
       <TouchableOpacity
         style={styles.card}
         activeOpacity={0.8}
-        onPress={() => router.push(`/(tabs)/reservas/${item.id}`)}
+        onPress={() =>
+          router.push({
+            pathname: '/(tabs)/reservas/[id]',
+            params: {
+              id: item.id.toString(),
+              reservaData: JSON.stringify(item),
+            },
+          })
+        }
       >
-        <View style={styles.cardLeft}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardCancha} numberOfLines={1}>
+            {item.canchaNombre ?? item.cancha?.nombre ?? 'Reserva sin cancha'}
+          </Text>
+          <View style={[styles.estadoBadge, estadoStyle.badge]}>
+            <Text style={[styles.estadoText, estadoStyle.text]}>{estadoStyle.label}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardSede} numberOfLines={1}>
+          {item.sedeNombre ?? item.cancha?.sede?.nombre ?? 'Sede sin asignar'}
+        </Text>
+
+        <View style={styles.cardFooter}>
           <Text style={styles.cardDate}>{item.fecha}</Text>
           <Text style={styles.cardHorario}>
-            {item.horario?.horaInicio} – {item.horario?.horaFin}
+            {formatHora(item.horaInicio ?? item.horario?.horaInicio)} -{' '}
+            {formatHora(item.horaFin ?? item.horario?.horaFin)}
           </Text>
         </View>
-        <View style={styles.cardRight}>
-          <Text style={styles.cardCancha} numberOfLines={1}>
-            {item.cancha?.nombre}
-          </Text>
-          <Text style={styles.cardSede} numberOfLines={1}>
-            {item.cancha?.sede?.nombre}
-          </Text>
-          <Text style={styles.cardTipo}>{item.cancha?.tipo?.nombre}</Text>
-        </View>
-        <Text style={styles.chevron}>›</Text>
       </TouchableOpacity>
     );
   }
@@ -93,7 +121,7 @@ export default function ReservasScreen() {
         <View style={styles.centered}>
           <Text style={styles.emptyTitle}>Sin reservas</Text>
           <Text style={styles.emptyText}>
-            Aún no has realizado ninguna reserva. Ve a Canchas para hacer tu primera reserva.
+            Aun no has realizado ninguna reserva. Ve a Canchas para hacer tu primera reserva.
           </Text>
         </View>
       ) : (
@@ -135,54 +163,66 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07,
     shadowRadius: 4,
     elevation: 2,
   },
-  cardLeft: {
-    marginRight: 14,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    minWidth: 72,
-  },
-  cardDate: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#1e3a5f',
-    textAlign: 'center',
-  },
-  cardHorario: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  cardRight: {
-    flex: 1,
+    gap: 10,
+    marginBottom: 6,
   },
   cardCancha: {
-    fontSize: 15,
+    flex: 1,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 2,
   },
   cardSede: {
     fontSize: 13,
     color: '#2563eb',
     fontWeight: '500',
-    marginBottom: 2,
+    marginBottom: 12,
   },
-  cardTipo: {
-    fontSize: 12,
-    color: '#9ca3af',
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  chevron: {
-    fontSize: 22,
-    color: '#d1d5db',
-    marginLeft: 8,
+  cardDate: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1e3a5f',
+  },
+  cardHorario: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  estadoBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  estadoText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  estadoActiva: {
+    backgroundColor: '#dcfce7',
+  },
+  estadoActivaText: {
+    color: '#166534',
+  },
+  estadoCancelada: {
+    backgroundColor: '#fee2e2',
+  },
+  estadoCanceladaText: {
+    color: '#b91c1c',
   },
   emptyTitle: {
     fontSize: 17,

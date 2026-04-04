@@ -1,51 +1,59 @@
 import { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
-import { getReservaById, cancelarReserva } from '@/services/reservas.service';
+import { cancelarReserva } from '@/services/reservas.service';
 import { Reserva } from '@/services/types';
 
+function parseReservaData(reservaData?: string | string[]): Reserva | null {
+  if (typeof reservaData !== 'string') return null;
+
+  try {
+    return JSON.parse(reservaData) as Reserva;
+  } catch {
+    return null;
+  }
+}
+
+function formatHora(hora?: string) {
+  return hora ? hora.slice(0, 5) : '--:--';
+}
+
+function InfoRow({ label, value }: { label: string; value?: string | number }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value ?? '-'}</Text>
+    </View>
+  );
+}
+
 export default function DetalleReservaScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, reservaData } = useLocalSearchParams<{ id: string; reservaData?: string }>();
   const navigation = useNavigation();
   const router = useRouter();
   const reservaId = Number(id);
 
-  const [reserva, setReserva] = useState<Reserva | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [reserva, setReserva] = useState<Reserva | null>(() => parseReservaData(reservaData));
   const [error, setError] = useState<string | null>(null);
   const [cancelando, setCancelando] = useState(false);
 
   useEffect(() => {
-    async function cargar() {
-      try {
-        const data = await getReservaById(reservaId);
-        setReserva(data);
-        navigation.setOptions({ title: `Reserva #${data.id}` });
-      } catch {
-        setError('No se pudo cargar el detalle de la reserva.');
-      } finally {
-        setLoading(false);
-      }
+    if (!reserva) {
+      setError('No se recibieron los datos de la reserva seleccionada.');
+      return;
     }
-    cargar();
-  }, [reservaId]);
+
+    navigation.setOptions({ title: `Reserva #${reserva.id}` });
+  }, [navigation, reserva]);
 
   function pedirConfirmacion() {
     Alert.alert(
       'Cancelar reserva',
-      '¿Estás seguro de que deseas cancelar esta reserva? Esta acción no se puede deshacer.',
+      'Estas seguro de que deseas cancelar esta reserva? Esta accion no se puede deshacer.',
       [
         { text: 'Volver', style: 'cancel' },
         {
-          text: 'Sí, cancelar',
+          text: 'Si, cancelar',
           style: 'destructive',
           onPress: ejecutarCancelacion,
         },
@@ -57,6 +65,7 @@ export default function DetalleReservaScreen() {
     setCancelando(true);
     try {
       await cancelarReserva(reservaId);
+      setReserva((prev) => (prev ? { ...prev, estado: 'CANCELADA' } : prev));
       Alert.alert('Reserva cancelada', 'Tu reserva ha sido cancelada exitosamente.', [
         {
           text: 'OK',
@@ -64,20 +73,11 @@ export default function DetalleReservaScreen() {
         },
       ]);
     } catch (e: any) {
-      const msg =
-        e?.response?.data?.message || 'No se pudo cancelar la reserva. Intenta de nuevo.';
+      const msg = e?.response?.data?.message || 'No se pudo cancelar la reserva. Intenta de nuevo.';
       Alert.alert('Error', msg);
     } finally {
       setCancelando(false);
     }
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
-    );
   }
 
   if (error || !reserva) {
@@ -88,65 +88,55 @@ export default function DetalleReservaScreen() {
     );
   }
 
+  const esActiva = reserva.estado === 'ACTIVA';
+  const canchaNombre = reserva.canchaNombre ?? reserva.cancha?.nombre ?? 'Reserva sin cancha';
+  const sedeNombre = reserva.sedeNombre ?? reserva.cancha?.sede?.nombre ?? 'Sede sin asignar';
+  const horaInicio = formatHora(reserva.horaInicio ?? reserva.horario?.horaInicio);
+  const horaFin = formatHora(reserva.horaFin ?? reserva.horario?.horaFin);
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.content}>
-        {/* Cabecera */}
         <View style={styles.headerCard}>
           <Text style={styles.reservaId}>Reserva #{reserva.id}</Text>
           <Text style={styles.fecha}>{reserva.fecha}</Text>
+          <View style={[styles.estadoBadge, esActiva ? styles.estadoActiva : styles.estadoCancelada]}>
+            <Text style={[styles.estadoText, esActiva ? styles.estadoActivaText : styles.estadoCanceladaText]}>
+              {reserva.estado ?? 'SIN ESTADO'}
+            </Text>
+          </View>
         </View>
 
-        {/* Cancha */}
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Cancha</Text>
-          <InfoRow label="Nombre" value={reserva.cancha?.nombre} />
-          <InfoRow label="Tipo" value={reserva.cancha?.tipo?.nombre} />
-          <InfoRow label="Capacidad" value={`${reserva.cancha?.capacidad} personas`} />
-          <InfoRow label="Descripción" value={reserva.cancha?.descripcion} />
+          <InfoRow label="Nombre" value={canchaNombre} />
+          <InfoRow label="Sede" value={sedeNombre} />
+          <InfoRow label="Cancha ID" value={reserva.canchaId} />
+          <InfoRow label="Horario ID" value={reserva.horarioId} />
         </View>
 
-        {/* Sede */}
-        <View style={styles.infoCard}>
-          <Text style={styles.cardTitle}>Sede</Text>
-          <InfoRow label="Nombre" value={reserva.cancha?.sede?.nombre} />
-          <InfoRow label="Dirección" value={reserva.cancha?.sede?.direccion} />
-        </View>
-
-        {/* Horario */}
         <View style={styles.infoCard}>
           <Text style={styles.cardTitle}>Horario reservado</Text>
-          <InfoRow label="Día" value={reserva.horario?.diaSemana} />
-          <InfoRow
-            label="Hora"
-            value={`${reserva.horario?.horaInicio} – ${reserva.horario?.horaFin}`}
-          />
+          <InfoRow label="Fecha" value={reserva.fecha} />
+          <InfoRow label="Hora" value={`${horaInicio} - ${horaFin}`} />
         </View>
 
-        {/* Botón cancelar */}
-        <TouchableOpacity
-          style={[styles.cancelButton, cancelando && styles.buttonDisabled]}
-          onPress={pedirConfirmacion}
-          disabled={cancelando}
-          activeOpacity={0.8}
-        >
-          {cancelando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.cancelButtonText}>Cancelar reserva</Text>
-          )}
-        </TouchableOpacity>
+        {esActiva ? (
+          <TouchableOpacity
+            style={[styles.cancelButton, cancelando && styles.buttonDisabled]}
+            onPress={pedirConfirmacion}
+            disabled={cancelando}
+            activeOpacity={0.8}
+          >
+            {cancelando ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.cancelButtonText}>Cancelar reserva</Text>
+            )}
+          </TouchableOpacity>
+        ) : null}
       </View>
     </ScrollView>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value?: string | number }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value ?? '–'}</Text>
-    </View>
   );
 }
 
@@ -181,6 +171,28 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700',
     color: '#fff',
+    marginBottom: 12,
+  },
+  estadoBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  estadoText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  estadoActiva: {
+    backgroundColor: '#dcfce7',
+  },
+  estadoActivaText: {
+    color: '#166534',
+  },
+  estadoCancelada: {
+    backgroundColor: '#fee2e2',
+  },
+  estadoCanceladaText: {
+    color: '#b91c1c',
   },
   infoCard: {
     backgroundColor: '#fff',

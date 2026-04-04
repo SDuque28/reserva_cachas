@@ -42,7 +42,15 @@ export interface Horario {
 export interface Reserva {
   id: number;
   fecha: string;
-  cancha: Cancha;
-  horario: Horario;
-  usuario: Usuario;
+  estado?: string;
+  canchaId?: number;
+  canchaNombre?: string;
+  sedeId?: number;
+  sedeNombre?: string;
+  horarioId?: number;
+  horaInicio?: string;
+  horaFin?: string;
+  cancha?: Cancha;
+  horario?: Horario;
+  usuario?: Usuario;
 }
