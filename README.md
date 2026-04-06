@@ -44,16 +44,16 @@ Sistema de reserva de canchas deportivas con **API REST en Spring Boot** y **apl
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   Dispositivo Móvil                  │
+│                   Dispositivo Móvil                 │
 │          React Native App (Expo Router)             │
 │                                                     │
 │   Login / Register  →  Canchas  →  Detalle  →       │
-│                         Reservas  →  Perfil          │
+│                         Reservas  →  Perfil         │
 └───────────────────┬─────────────────────────────────┘
                     │ HTTP REST + JWT Bearer Token
                     ▼
 ┌─────────────────────────────────────────────────────┐
-│              API REST (Spring Boot 3.3.5)            │
+│              API REST (Spring Boot 3.3.5)           │
 │                                                     │
 │  /auth/**   →  AuthController  (público)            │
 │  /canchas/** →  CanchaController  (autenticado)     │
@@ -65,7 +65,7 @@ Sistema de reserva de canchas deportivas con **API REST en Spring Boot** y **apl
                     │ JPA / Hibernate
                     ▼
 ┌─────────────────────────────────────────────────────┐
-│                  MySQL 8+                            │
+│                  MySQL 8+                           │
 │   usuario · rol · usuario_rol · sede · tipo_cancha  │
 │   cancha · horario · reserva                        │
 └─────────────────────────────────────────────────────┘
